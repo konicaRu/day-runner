@@ -75,12 +75,43 @@ body {
   letter-spacing: -0.01em;
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .clock {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-size: 20px;
   font-weight: 600;
   color: var(--text);
+}
+
+.countdown {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--accent-soft);
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.countdown::before {
+  content: "до 18:00 ";
+  color: var(--accent);
+}
+
+.countdown.is-over {
+  background: transparent;
+  color: var(--text-subtle);
+}
+
+.countdown.is-over::before {
+  content: "день закончен ";
 }
 
 main {
