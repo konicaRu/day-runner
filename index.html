@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
   <header class="topbar">
@@ -18,9 +18,22 @@
     </div>
   </header>
   <main>
+    <section class="pomodoro" id="pomodoro" aria-label="Pomodoro">
+      <div class="pomo-head">
+        <span class="pomo-mode pomo-mode-work" id="pomoMode">Фокус</span>
+        <span class="pomo-sprints" id="pomoSprints">Спринт 1 / 4</span>
+      </div>
+      <div class="pomo-time" id="pomoTime">25:00</div>
+      <div class="pomo-controls">
+        <button id="pomoStart" class="pomo-btn pomo-btn-primary" type="button">Старт</button>
+        <button id="pomoSkip"  class="pomo-btn" type="button">Пропуск</button>
+        <button id="pomoReset" class="pomo-btn" type="button">Сброс</button>
+        <button id="pomoPreset" class="pomo-btn pomo-btn-ghost" type="button">25 / 5</button>
+      </div>
+    </section>
     <section id="schedule" class="schedule" aria-label="Расписание"></section>
   </main>
-  <script src="schedule.js?v=3"></script>
-  <script src="app.js?v=3"></script>
+  <script src="schedule.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
