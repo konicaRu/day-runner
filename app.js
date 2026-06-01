@@ -542,17 +542,27 @@ function tickTimer() {
   }
 }
 
+const RING_RADIUS = 104;
+const RING_CIRC = 2 * Math.PI * RING_RADIUS;
+
 function renderTimer() {
   const timeEl = document.getElementById("pomoTime");
+  const metaEl = document.getElementById("pomoTimeMeta");
   const modeEl = document.getElementById("pomoMode");
   const sprintsEl = document.getElementById("pomoSprints");
   const startBtn = document.getElementById("pomoStart");
   const presetBtn = document.getElementById("pomoPreset");
+  const ring = document.getElementById("pomoRing");
   const pomo = document.getElementById("pomodoro");
 
+  const total = modeDurationSec(timer.mode);
   const mm = Math.floor(timer.secLeft / 60);
   const ss = timer.secLeft % 60;
+  const tm = Math.floor(total / 60);
+  const ts = total % 60;
+
   timeEl.textContent = pad2(mm) + ":" + pad2(ss);
+  if (metaEl) metaEl.textContent = "из " + pad2(tm) + ":" + pad2(ts);
 
   modeEl.textContent = modeLabel(timer.mode);
   modeEl.className = "pomo-mode pomo-mode-" + (timer.mode === "work" ? "work" : "break");
@@ -566,6 +576,12 @@ function renderTimer() {
 
   pomo.dataset.mode = timer.mode;
   pomo.classList.toggle("is-running", timer.running);
+
+  if (ring) {
+    const ratio = Math.max(0, Math.min(1, timer.secLeft / total));
+    ring.setAttribute("stroke-dasharray", String(RING_CIRC));
+    ring.setAttribute("stroke-dashoffset", String(RING_CIRC * (1 - ratio)));
+  }
 
   document.title = (timer.running ? "▶ " : "") + pad2(mm) + ":" + pad2(ss) + " · " + modeLabel(timer.mode);
 }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=8" />
 </head>
 <body>
   <header class="topbar">
@@ -33,7 +33,16 @@
         <span class="pomo-mode pomo-mode-work" id="pomoMode">Фокус</span>
         <span class="pomo-sprints" id="pomoSprints">Спринт 1 / 4</span>
       </div>
-      <div class="pomo-time" id="pomoTime">25:00</div>
+      <div class="pomo-ring-wrap">
+        <svg class="pomo-ring" viewBox="0 0 240 240" aria-hidden="true">
+          <circle class="pomo-ring-track" cx="120" cy="120" r="104" />
+          <circle class="pomo-ring-fill"  cx="120" cy="120" r="104" id="pomoRing" />
+        </svg>
+        <div class="pomo-ring-center">
+          <div class="pomo-time" id="pomoTime">25:00</div>
+          <div class="pomo-time-meta" id="pomoTimeMeta">из 25:00</div>
+        </div>
+      </div>
       <div class="pomo-controls">
         <button id="pomoStart" class="pomo-btn pomo-btn-primary" type="button">Старт</button>
         <button id="pomoSkip"  class="pomo-btn" type="button">Пропуск</button>
@@ -58,7 +67,7 @@
     </section>
     <section id="schedule" class="schedule" aria-label="Расписание"></section>
   </main>
-  <script src="schedule.js?v=7"></script>
-  <script src="app.js?v=7"></script>
+  <script src="schedule.js?v=8"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
