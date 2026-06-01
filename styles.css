@@ -238,6 +238,36 @@ main {
   cursor: not-allowed;
 }
 
+.pomo-sound {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  margin-top: 2px;
+}
+
+.pomo-select {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.pomo-select:hover { border-color: var(--accent); }
+.pomo-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+label.pomo-btn { display: inline-flex; align-items: center; }
+
 /* Карточки блоков */
 .block {
   background: var(--surface);

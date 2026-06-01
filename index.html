@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="stylesheet" href="styles.css?v=6" />
 </head>
 <body>
   <header class="topbar">
@@ -29,13 +29,26 @@
         <button id="pomoSkip"  class="pomo-btn" type="button">Пропуск</button>
         <button id="pomoReset" class="pomo-btn" type="button">Сброс</button>
         <button id="pomoPreset" class="pomo-btn pomo-btn-ghost" type="button">25 / 5</button>
-        <button id="soundBtn"   class="pomo-btn pomo-btn-ghost" type="button">Звук вкл</button>
-        <button id="notifyBtn"  class="pomo-btn pomo-btn-ghost" type="button">Уведомления</button>
+      </div>
+      <div class="pomo-sound">
+        <button id="soundBtn" class="pomo-btn pomo-btn-ghost" type="button">Звук вкл</button>
+        <select id="soundSelect" class="pomo-select" aria-label="Звук сигнала">
+          <option value="bleep">Двойной бип</option>
+          <option value="chime">Колокольчик</option>
+          <option value="ding">Динь</option>
+          <option value="triple">Тройной</option>
+          <option value="low">Низкий</option>
+          <option value="custom">Свой файл</option>
+        </select>
+        <label for="soundFile" class="pomo-btn pomo-btn-ghost" id="soundFileLabel">Загрузить…</label>
+        <input id="soundFile" type="file" accept="audio/*" hidden />
+        <button id="soundTest" class="pomo-btn pomo-btn-ghost" type="button">▶ тест</button>
+        <button id="notifyBtn" class="pomo-btn pomo-btn-ghost" type="button">Уведомления</button>
       </div>
     </section>
     <section id="schedule" class="schedule" aria-label="Расписание"></section>
   </main>
-  <script src="schedule.js?v=5"></script>
-  <script src="app.js?v=5"></script>
+  <script src="schedule.js?v=6"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

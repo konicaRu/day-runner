@@ -2,6 +2,10 @@ const STORAGE_KEY = "day-runner-state";
 const DAY_END_MIN = 18 * 60;
 
 const SOUND_KEY = "day-runner-sound";
+const SOUND_PRESET_KEY = "day-runner-sound-preset";
+const SOUND_FILE_KEY = "day-runner-sound-file";
+const SOUND_FILE_NAME_KEY = "day-runner-sound-file-name";
+const SOUND_FILE_MAX_BYTES = 1_000_000;
 
 const PRESETS = {
   classic: { work: 25, break: 5, label: "25 / 5" },
@@ -205,7 +209,13 @@ function maybeRollOverDay() {
 /* ----------------- Сигналы (звук + уведомления) ----------------- */
 
 let soundOn = true;
+let soundPreset = "bleep";
+let customAudioData = null;
+let customAudioName = "";
 try { soundOn = localStorage.getItem(SOUND_KEY) !== "off"; } catch {}
+try { soundPreset = localStorage.getItem(SOUND_PRESET_KEY) || "bleep"; } catch {}
+try { customAudioData = localStorage.getItem(SOUND_FILE_KEY); } catch {}
+try { customAudioName = localStorage.getItem(SOUND_FILE_NAME_KEY) || ""; } catch {}
 
 let audioCtx = null;
 function ensureAudio() {
@@ -217,13 +227,13 @@ function ensureAudio() {
   return audioCtx;
 }
 
-function playTone(freq, startOffset, duration, peakGain) {
+function playTone(freq, startOffset, duration, peakGain, type) {
   try {
     const ctx = audioCtx;
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = "sine";
+    osc.type = type || "sine";
     osc.frequency.value = freq;
     const t0 = ctx.currentTime + startOffset;
     gain.gain.setValueAtTime(0.0001, t0);
@@ -236,14 +246,54 @@ function playTone(freq, startOffset, duration, peakGain) {
   } catch {}
 }
 
+function playPreset(name) {
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume();
+  switch (name) {
+    case "chime":
+      playTone(1318, 0,    0.55, 0.25, "sine");
+      playTone(1568, 0.18, 0.65, 0.22, "sine");
+      break;
+    case "ding":
+      playTone(1760, 0, 0.7, 0.28, "sine");
+      playTone(2637, 0, 0.35, 0.10, "sine");
+      break;
+    case "triple":
+      playTone(1200, 0.00, 0.10, 0.25, "square");
+      playTone(1200, 0.14, 0.10, 0.25, "square");
+      playTone(1200, 0.28, 0.10, 0.25, "square");
+      break;
+    case "low":
+      playTone(440, 0,    0.22, 0.30, "sine");
+      playTone(660, 0.24, 0.26, 0.30, "sine");
+      break;
+    case "bleep":
+    default:
+      playTone(880, 0,    0.18, 0.25, "sine");
+      playTone(1175, 0.22, 0.22, 0.25, "sine");
+  }
+}
+
+function playCustom() {
+  try {
+    if (!customAudioData) return;
+    const audio = new Audio(customAudioData);
+    audio.volume = 0.8;
+    const p = audio.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch {}
+}
+
 function bleep() {
   if (!soundOn) return;
   try {
-    const ctx = ensureAudio();
-    if (!ctx) return;
-    if (ctx.state === "suspended") ctx.resume();
-    playTone(880, 0, 0.18, 0.25);
-    playTone(1175, 0.22, 0.22, 0.25);
+    if (soundPreset === "custom") {
+      if (customAudioData) playCustom();
+      else playPreset("bleep");
+      return;
+    }
+    playPreset(soundPreset);
   } catch {}
 }
 
@@ -293,13 +343,67 @@ function requestNotify() {
   } catch {}
 }
 
+function updateSoundFileLabel() {
+  const label = document.getElementById("soundFileLabel");
+  if (!label) return;
+  if (customAudioName) label.textContent = "Файл: " + (customAudioName.length > 18 ? customAudioName.slice(0, 16) + "…" : customAudioName);
+  else label.textContent = "Загрузить…";
+}
+
+function onSoundPresetChange(e) {
+  soundPreset = e.target.value;
+  try { localStorage.setItem(SOUND_PRESET_KEY, soundPreset); } catch {}
+  if (soundPreset === "custom" && !customAudioData) {
+    document.getElementById("soundFile").click();
+    return;
+  }
+  bleep();
+}
+
+function onSoundFile(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  if (file.size > SOUND_FILE_MAX_BYTES) {
+    alert("Файл слишком большой. Максимум ~1 МБ (хранится в браузере).");
+    e.target.value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      customAudioData = String(reader.result);
+      customAudioName = file.name;
+      localStorage.setItem(SOUND_FILE_KEY, customAudioData);
+      localStorage.setItem(SOUND_FILE_NAME_KEY, customAudioName);
+      soundPreset = "custom";
+      localStorage.setItem(SOUND_PRESET_KEY, "custom");
+      const sel = document.getElementById("soundSelect");
+      if (sel) sel.value = "custom";
+      updateSoundFileLabel();
+      bleep();
+    } catch (err) {
+      alert("Не удалось сохранить файл: " + (err && err.message ? err.message : err));
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function onSoundTest() { bleep(); }
+
 function bindSignalsUI() {
   const sBtn = document.getElementById("soundBtn");
   const nBtn = document.getElementById("notifyBtn");
+  const sel = document.getElementById("soundSelect");
+  const file = document.getElementById("soundFile");
+  const test = document.getElementById("soundTest");
   if (sBtn) sBtn.addEventListener("click", toggleSound);
   if (nBtn) nBtn.addEventListener("click", requestNotify);
+  if (sel) { sel.value = soundPreset; sel.addEventListener("change", onSoundPresetChange); }
+  if (file) file.addEventListener("change", onSoundFile);
+  if (test) test.addEventListener("click", onSoundTest);
   updateSoundBtn();
   updateNotifyBtn();
+  updateSoundFileLabel();
 }
 
 /* ----------------- Pomodoro ----------------- */
