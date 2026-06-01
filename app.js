@@ -64,24 +64,44 @@ function renderCountdown() {
   el.textContent = pad2(h) + ":" + pad2(m) + ":" + pad2(s);
 }
 
+const TYPE_LABEL = {
+  plan: "План",
+  focus: "Фокус",
+  rest: "Отдых",
+  study: "Учёба",
+};
+
 function renderSchedule() {
   const root = document.getElementById("schedule");
   root.innerHTML = "";
-  for (const block of SCHEDULE) {
+  SCHEDULE.forEach((block, idx) => {
     const article = document.createElement("article");
     article.className = "block";
     article.dataset.start = block.start;
     article.dataset.end = block.end;
+    article.dataset.blockIdx = idx;
+    if (block.type) article.dataset.type = block.type;
+    article.style.animationDelay = (idx * 40) + "ms";
 
     const head = document.createElement("div");
     head.className = "block-head";
+
     const time = document.createElement("span");
     time.className = "block-time";
     time.textContent = block.start + "–" + block.end;
-    const title = document.createElement("span");
+
+    const title = document.createElement("h2");
     title.className = "block-title";
     title.textContent = block.title;
+
     head.append(time, title);
+
+    if (block.type) {
+      const tag = document.createElement("span");
+      tag.className = "block-tag tag-" + block.type;
+      tag.textContent = TYPE_LABEL[block.type] || block.type;
+      head.append(tag);
+    }
     article.append(head);
 
     if (block.items && block.items.length) {
@@ -90,23 +110,53 @@ function renderSchedule() {
       for (const item of block.items) {
         const li = document.createElement("li");
         const label = document.createElement("label");
+        label.className = "check";
         const cb = document.createElement("input");
         cb.type = "checkbox";
         cb.id = item.id;
         cb.dataset.itemId = item.id;
+        cb.dataset.blockIdx = idx;
         cb.checked = !!state.items[item.id];
         cb.addEventListener("change", onCheckboxChange);
-        const span = document.createElement("span");
-        span.textContent = item.text;
-        label.append(cb, span);
+        const box = document.createElement("span");
+        box.className = "check-box";
+        const text = document.createElement("span");
+        text.className = "check-text";
+        text.textContent = item.text;
+        label.append(cb, box, text);
         li.append(label);
         ul.append(li);
       }
       article.append(ul);
+
+      const footer = document.createElement("div");
+      footer.className = "block-footer";
+      const count = document.createElement("span");
+      count.className = "block-count";
+      const bar = document.createElement("div");
+      bar.className = "block-bar";
+      const fill = document.createElement("div");
+      fill.className = "block-bar-fill";
+      bar.append(fill);
+      footer.append(count, bar);
+      article.append(footer);
+
+      updateBlockProgress(article, block);
     }
 
     root.append(article);
-  }
+  });
+}
+
+function updateBlockProgress(article, block) {
+  if (!block.items || !block.items.length) return;
+  const total = block.items.length;
+  const done = block.items.reduce((n, it) => n + (state.items[it.id] ? 1 : 0), 0);
+  const count = article.querySelector(".block-count");
+  const fill = article.querySelector(".block-bar-fill");
+  if (count) count.textContent = done + "/" + total;
+  if (fill) fill.style.width = (total ? (done / total) * 100 : 0) + "%";
+  article.classList.toggle("is-complete", done === total && total > 0);
 }
 
 function onCheckboxChange(e) {
@@ -115,6 +165,9 @@ function onCheckboxChange(e) {
   else delete state.items[id];
   state.date = todayKey();
   saveState(state);
+  const idx = Number(e.target.dataset.blockIdx);
+  const article = document.querySelector('.block[data-block-idx="' + idx + '"]');
+  if (article) updateBlockProgress(article, SCHEDULE[idx]);
 }
 
 function maybeRollOverDay() {

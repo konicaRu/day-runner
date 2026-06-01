@@ -3,6 +3,7 @@ const SCHEDULE = [
     start: "10:00",
     end: "10:20",
     title: "Планёрка",
+    type: "plan",
     items: [
       { id: "plan-vacancies", text: "новые вакансии" },
       { id: "plan-replies", text: "ответы за ночь" },
@@ -14,6 +15,7 @@ const SCHEDULE = [
     start: "10:20",
     end: "12:30",
     title: "Поиск работы",
+    type: "focus",
     items: [
       { id: "job-apply", text: "3–5 точечных откликов" },
       { id: "job-cv", text: "резюме/сопроводительное под вакансию" },
@@ -24,6 +26,7 @@ const SCHEDULE = [
     start: "12:30",
     end: "13:30",
     title: "Обед + прогулка",
+    type: "rest",
     items: [
       { id: "lunch-walk", text: "уйти от экрана, на улицу" },
     ],
@@ -32,6 +35,7 @@ const SCHEDULE = [
     start: "13:30",
     end: "15:30",
     title: "Хард-скилл",
+    type: "study",
     items: [
       { id: "hard-sql", text: "Учим SQL" },
       { id: "hard-python", text: "Учим Python" },
@@ -43,12 +47,14 @@ const SCHEDULE = [
     start: "15:30",
     end: "15:45",
     title: "Перерыв",
+    type: "rest",
     items: [],
   },
   {
     start: "15:45",
     end: "17:00",
     title: "Вайб-кодинг (Stepik) + проект",
+    type: "study",
     items: [
       { id: "vibe-lesson", text: "урок/модуль на Stepik" },
       { id: "vibe-apply", text: "применить на проекте" },
@@ -59,6 +65,7 @@ const SCHEDULE = [
     start: "17:00",
     end: "18:00",
     title: "Разведка",
+    type: "plan",
     items: [
       { id: "scout-article", text: "1 статья" },
       { id: "scout-repo", text: "1 свежий репозиторий" },
