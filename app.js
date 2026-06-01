@@ -1,6 +1,8 @@
 const STORAGE_KEY = "day-runner-state";
 const DAY_END_MIN = 18 * 60;
 
+const SOUND_KEY = "day-runner-sound";
+
 const PRESETS = {
   classic: { work: 25, break: 5, label: "25 / 5" },
   long:    { work: 50, break: 10, label: "50 / 10" },
@@ -200,6 +202,106 @@ function maybeRollOverDay() {
   }
 }
 
+/* ----------------- Сигналы (звук + уведомления) ----------------- */
+
+let soundOn = true;
+try { soundOn = localStorage.getItem(SOUND_KEY) !== "off"; } catch {}
+
+let audioCtx = null;
+function ensureAudio() {
+  if (audioCtx) return audioCtx;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  } catch {}
+  return audioCtx;
+}
+
+function playTone(freq, startOffset, duration, peakGain) {
+  try {
+    const ctx = audioCtx;
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    const t0 = ctx.currentTime + startOffset;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(peakGain, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.05);
+  } catch {}
+}
+
+function bleep() {
+  if (!soundOn) return;
+  try {
+    const ctx = ensureAudio();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    playTone(880, 0, 0.18, 0.25);
+    playTone(1175, 0.22, 0.22, 0.25);
+  } catch {}
+}
+
+function notify(title, body) {
+  try {
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission === "granted") {
+      new Notification(title, { body: body || "", silent: true });
+    }
+  } catch {}
+}
+
+function updateSoundBtn() {
+  const btn = document.getElementById("soundBtn");
+  if (!btn) return;
+  btn.textContent = soundOn ? "Звук вкл" : "Звук выкл";
+  btn.classList.toggle("is-off", !soundOn);
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  try { localStorage.setItem(SOUND_KEY, soundOn ? "on" : "off"); } catch {}
+  updateSoundBtn();
+  if (soundOn) bleep();
+}
+
+function updateNotifyBtn() {
+  const btn = document.getElementById("notifyBtn");
+  if (!btn) return;
+  if (typeof Notification === "undefined") {
+    btn.textContent = "Уведомл. не поддерж.";
+    btn.disabled = true;
+    return;
+  }
+  const p = Notification.permission;
+  if (p === "granted") { btn.textContent = "Уведомл. вкл"; btn.classList.remove("is-off"); }
+  else if (p === "denied") { btn.textContent = "Уведомл. заблок."; btn.classList.add("is-off"); }
+  else { btn.textContent = "Включить уведомл."; btn.classList.add("is-off"); }
+}
+
+function requestNotify() {
+  try {
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then(updateNotifyBtn).catch(() => {});
+    }
+  } catch {}
+}
+
+function bindSignalsUI() {
+  const sBtn = document.getElementById("soundBtn");
+  const nBtn = document.getElementById("notifyBtn");
+  if (sBtn) sBtn.addEventListener("click", toggleSound);
+  if (nBtn) nBtn.addEventListener("click", requestNotify);
+  updateSoundBtn();
+  updateNotifyBtn();
+}
+
 /* ----------------- Pomodoro ----------------- */
 
 let timer = {
@@ -275,7 +377,11 @@ function tickTimer() {
   if (!timer.running) return;
   timer.secLeft -= 1;
   if (timer.secLeft <= 0) {
+    const ended = timer.mode;
     advanceTimer();
+    bleep();
+    if (ended === "work") notify("Спринт закончен", "Перерыв: " + modeLabel(timer.mode));
+    else notify("Перерыв закончен", "Возвращаемся в фокус");
   }
 }
 
@@ -316,6 +422,32 @@ function bindTimerUI() {
 
 /* -------------------------------------------- */
 
+function currentBlockIdx() {
+  const now = nowMinutes();
+  for (let i = 0; i < SCHEDULE.length; i++) {
+    const b = SCHEDULE[i];
+    if (now >= parseHM(b.start) && now < parseHM(b.end)) return i;
+  }
+  return -1;
+}
+
+let lastBlockIdx = currentBlockIdx();
+
+function checkBlockChange() {
+  const idx = currentBlockIdx();
+  if (idx !== lastBlockIdx) {
+    if (idx >= 0) {
+      const b = SCHEDULE[idx];
+      bleep();
+      notify("Время сменить блок", b.title + " · " + b.start + "–" + b.end);
+    } else if (lastBlockIdx >= 0) {
+      bleep();
+      notify("Расписание завершено", "День закончен");
+    }
+    lastBlockIdx = idx;
+  }
+}
+
 function updateBlockStates() {
   const now = nowMinutes();
   const blocks = document.querySelectorAll(".block");
@@ -326,6 +458,7 @@ function updateBlockStates() {
     if (now >= e) el.classList.add("is-past");
     else if (now >= s && now < e) el.classList.add("is-current");
   });
+  checkBlockChange();
 }
 
 function tick() {
@@ -339,6 +472,7 @@ function tick() {
 
 renderSchedule();
 bindTimerUI();
+bindSignalsUI();
 renderTimer();
 tick();
 setInterval(tick, 1000);

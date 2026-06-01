@@ -227,6 +227,17 @@ main {
   color: var(--text-muted);
 }
 
+.pomo-btn.is-off {
+  background: transparent;
+  color: var(--text-subtle);
+  border-style: dashed;
+}
+
+.pomo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Карточки блоков */
 .block {
   background: var(--surface);
