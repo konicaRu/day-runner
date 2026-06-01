@@ -7,14 +7,24 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <header class="topbar">
-    <h1>Пульт дня</h1>
-    <div class="topbar-right">
-      <div id="countdown" class="countdown" title="До конца дня (18:00)">--:--:--</div>
-      <div id="clock" class="clock">--:--:--</div>
+    <div class="topbar-row topbar-main">
+      <div class="topbar-left">
+        <h1>Пульт дня</h1>
+        <span class="topbar-date" id="date">—</span>
+      </div>
+      <div class="topbar-right">
+        <div id="countdown" class="countdown" title="До конца дня (18:00)">--:--:--</div>
+        <div id="clock" class="clock">--:--:--</div>
+      </div>
+    </div>
+    <div class="topbar-row topbar-now">
+      <span class="now-label">Сейчас</span>
+      <span class="now-title" id="nowBlock">—</span>
+      <span class="now-meta" id="nowMeta"></span>
     </div>
   </header>
   <main>
@@ -48,7 +58,7 @@
     </section>
     <section id="schedule" class="schedule" aria-label="Расписание"></section>
   </main>
-  <script src="schedule.js?v=6"></script>
-  <script src="app.js?v=6"></script>
+  <script src="schedule.js?v=7"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

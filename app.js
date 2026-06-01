@@ -67,6 +67,59 @@ function renderClock() {
   el.textContent = pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
 }
 
+function formatHumanDuration(sec) {
+  if (sec <= 0) return "0м";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return h + "ч " + m + "м";
+  if (m > 0) return m + "м";
+  return Math.max(1, sec) + "с";
+}
+
+function renderHeader() {
+  const d = new Date();
+  const dateEl = document.getElementById("date");
+  if (dateEl) {
+    try {
+      dateEl.textContent = new Intl.DateTimeFormat("ru-RU", {
+        weekday: "short", day: "numeric", month: "long",
+      }).format(d);
+    } catch { dateEl.textContent = ""; }
+  }
+
+  const nowEl = document.getElementById("nowBlock");
+  const metaEl = document.getElementById("nowMeta");
+  if (!nowEl || !metaEl) return;
+
+  const nowSec = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+  const idx = currentBlockIdx();
+  if (idx >= 0) {
+    const b = SCHEDULE[idx];
+    nowEl.textContent = b.title;
+    nowEl.dataset.type = b.type || "plan";
+    const diff = parseHM(b.end) * 60 - nowSec;
+    metaEl.textContent = "до смены " + formatHumanDuration(diff) + " · " + b.start + "–" + b.end;
+  } else {
+    const first = SCHEDULE[0];
+    const last = SCHEDULE[SCHEDULE.length - 1];
+    const startSec = parseHM(first.start) * 60;
+    const endSec = parseHM(last.end) * 60;
+    if (nowSec < startSec) {
+      nowEl.textContent = "День ещё не начался";
+      nowEl.dataset.type = "plan";
+      metaEl.textContent = "до старта " + formatHumanDuration(startSec - nowSec);
+    } else if (nowSec >= endSec) {
+      nowEl.textContent = "День завершён";
+      nowEl.dataset.type = "plan";
+      metaEl.textContent = "";
+    } else {
+      nowEl.textContent = "Между блоками";
+      nowEl.dataset.type = "plan";
+      metaEl.textContent = "";
+    }
+  }
+}
+
 function renderCountdown() {
   const el = document.getElementById("countdown");
   const d = new Date();
@@ -102,7 +155,7 @@ function renderSchedule() {
     article.dataset.end = block.end;
     article.dataset.blockIdx = idx;
     if (block.type) article.dataset.type = block.type;
-    article.style.animationDelay = (idx * 40) + "ms";
+    article.style.animationDelay = (120 + idx * 50) + "ms";
 
     const head = document.createElement("div");
     head.className = "block-head";
@@ -568,6 +621,7 @@ function updateBlockStates() {
 function tick() {
   renderClock();
   renderCountdown();
+  renderHeader();
   tickTimer();
   renderTimer();
   updateBlockStates();
