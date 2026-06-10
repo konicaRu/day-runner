@@ -448,23 +448,80 @@ function weekdayShort(key) {
   } catch { return ""; }
 }
 
+const STATS_CHART_DAYS = 30;
+
 function buildStatsMarkdown() {
-  const keys = Object.keys(resumes.days).sort().reverse();
+  const keys = Object.keys(resumes.days).sort();
   const total = keys.reduce((s, k) => s + resumes.days[k], 0);
-  const lines = [
+  const L = [
     "# Отклики по дням",
     "",
     "Автообновляется со страницы [day-runner](https://konicaru.github.io/day-runner/).",
     "",
-    "| Дата | Резюме |",
-    "|---|---:|",
   ];
-  for (const k of keys) {
-    lines.push("| " + k + " (" + weekdayShort(k) + ") | " + resumes.days[k] + " |");
+
+  if (keys.length) {
+    // график по дням: последние STATS_CHART_DAYS календарных дней
+    const labels = [];
+    const values = [];
+    let maxV = 1;
+    for (let i = -(STATS_CHART_DAYS - 1); i <= 0; i++) {
+      const k = dateKeyOffset(i);
+      const v = resumes.days[k] || 0;
+      labels.push('"' + k.slice(8, 10) + "." + k.slice(5, 7) + '"');
+      values.push(v);
+      if (v > maxV) maxV = v;
+    }
+    L.push(
+      "```mermaid",
+      "xychart-beta",
+      '  title "Последние ' + STATS_CHART_DAYS + ' дней"',
+      "  x-axis [" + labels.join(", ") + "]",
+      '  y-axis "Резюме" 0 --> ' + (maxV + 1),
+      "  bar [" + values.join(", ") + "]",
+      "```",
+      ""
+    );
+
+    // по месяцам — когда данных больше одного месяца
+    const months = {};
+    for (const k of keys) {
+      const mk = k.slice(0, 7);
+      months[mk] = (months[mk] || 0) + resumes.days[k];
+    }
+    const mkeys = Object.keys(months).sort();
+    if (mkeys.length > 1) {
+      let maxM = 1;
+      for (const mk of mkeys) if (months[mk] > maxM) maxM = months[mk];
+      L.push(
+        "## По месяцам",
+        "",
+        "```mermaid",
+        "xychart-beta",
+        "  x-axis [" + mkeys.map((m) => '"' + m + '"').join(", ") + "]",
+        '  y-axis "Резюме" 0 --> ' + (maxM + 1),
+        "  bar [" + mkeys.map((m) => months[m]).join(", ") + "]",
+        "```",
+        "",
+        "| Месяц | Резюме |",
+        "|---|---:|"
+      );
+      for (let i = mkeys.length - 1; i >= 0; i--) {
+        L.push("| " + mkeys[i] + " | " + months[mkeys[i]] + " |");
+      }
+      L.push("");
+    }
+
+    L.push("## По дням", "");
   }
-  lines.push("| **Итого** | **" + total + "** |");
-  lines.push("");
-  return lines.join("\n");
+
+  L.push("| Дата | Резюме |", "|---|---:|");
+  for (let i = keys.length - 1; i >= 0; i--) {
+    const k = keys[i];
+    L.push("| " + k + " (" + weekdayShort(k) + ") | " + resumes.days[k] + " |");
+  }
+  L.push("| **Итого** | **" + total + "** |", "");
+  return L.join("\n");
 }
 
 function setGhStatus(text, isError) {
