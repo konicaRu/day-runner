@@ -221,6 +221,14 @@ body {
   color: #fff;
 }
 
+.resume-pip { font-size: 12px; }
+
+.resume-pip.is-on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .resume-pop {
   position: absolute;
   top: calc(100% + 10px);

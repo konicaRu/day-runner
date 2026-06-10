@@ -331,6 +331,97 @@ function renderResumeCounter() {
   const text = n + "/" + resumes.goal;
   if (numEl.textContent !== text) numEl.textContent = text;
   pill.classList.toggle("is-goal", n >= resumes.goal);
+
+  if (pipWin && !pipWin.closed) {
+    const pipNum = pipWin.document.getElementById("pipNum");
+    if (pipNum && pipNum.textContent !== text) pipNum.textContent = text;
+    pipWin.document.body.classList.toggle("is-goal", n >= resumes.goal);
+  }
+}
+
+/* --- плавающее окно поверх всех (Document Picture-in-Picture, Chrome/Edge 116+) --- */
+
+let pipWin = null;
+
+function pipSupported() {
+  return "documentPictureInPicture" in window;
+}
+
+function updatePipBtn() {
+  const btn = document.getElementById("resumePip");
+  if (!btn) return;
+  const on = !!(pipWin && !pipWin.closed);
+  btn.classList.toggle("is-on", on);
+  btn.title = on ? "Закрыть плавающее окно" : "Плавающее окно поверх всех окон";
+}
+
+const PIP_CSS = `
+  :root { color-scheme: light; }
+  body {
+    margin: 0; height: 100vh; user-select: none;
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: #F6F7F9; color: #14161A;
+  }
+  .wrap { text-align: center; }
+  .label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #9CA3AF; margin-bottom: 6px;
+  }
+  .row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .num {
+    font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums;
+    font-size: 28px; font-weight: 600; min-width: 96px;
+  }
+  body.is-goal .num { color: #047857; }
+  button {
+    width: 34px; height: 34px; border-radius: 50%; border: 1px solid #E6E8EC;
+    background: #fff; color: #6B7280; font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  button:hover { border-color: #6366F1; color: #6366F1; }
+  #pipPlus { background: #6366F1; border-color: #6366F1; color: #fff; }
+  #pipPlus:hover { background: #4F46E5; }
+  body.is-goal #pipPlus { background: #047857; border-color: #047857; }
+`;
+
+async function openResumePipWindow() {
+  try {
+    pipWin = await window.documentPictureInPicture.requestWindow({ width: 230, height: 110 });
+  } catch {
+    pipWin = null;
+    return;
+  }
+  const doc = pipWin.document;
+  doc.title = "Резюме";
+  const style = doc.createElement("style");
+  style.textContent = PIP_CSS;
+  doc.head.append(style);
+  doc.body.innerHTML =
+    '<div class="wrap">' +
+    '<div class="label">Резюме сегодня</div>' +
+    '<div class="row">' +
+    '<button id="pipMinus" aria-label="Убрать">−</button>' +
+    '<div class="num" id="pipNum">0/10</div>' +
+    '<button id="pipPlus" aria-label="Добавить">+</button>' +
+    "</div></div>";
+  doc.getElementById("pipMinus").addEventListener("click", () => addResume(-1));
+  doc.getElementById("pipPlus").addEventListener("click", () => addResume(1));
+  pipWin.addEventListener("pagehide", () => {
+    pipWin = null;
+    updatePipBtn();
+  });
+  renderResumeCounter();
+  updatePipBtn();
+}
+
+function toggleResumePipWindow() {
+  if (pipWin && !pipWin.closed) {
+    pipWin.close();
+    pipWin = null;
+    updatePipBtn();
+    return;
+  }
+  openResumePipWindow();
 }
 
 function renderResumePop() {
@@ -425,10 +516,15 @@ function bindResumeUI() {
   const minus = document.getElementById("resumeMinus");
   const pill = document.getElementById("resumeCount");
   const goal = document.getElementById("resumeGoal");
+  const pipBtn = document.getElementById("resumePip");
   if (plus) plus.addEventListener("click", () => addResume(1));
   if (minus) minus.addEventListener("click", () => addResume(-1));
   if (pill) pill.addEventListener("click", () => toggleResumePop());
   if (goal) goal.addEventListener("change", onResumeGoalChange);
+  if (pipBtn) {
+    if (pipSupported()) pipBtn.addEventListener("click", toggleResumePipWindow);
+    else pipBtn.hidden = true;
+  }
   document.addEventListener("click", (e) => {
     const widget = document.getElementById("resumeWidget");
     const pop = document.getElementById("resumePop");

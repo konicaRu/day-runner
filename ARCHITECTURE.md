@@ -124,6 +124,14 @@ day-runner/
 - `renderResumePop()` — мини-график за 14 дней (столбики, сегодня — акцент, дни с целью — зелёные), таблица «дата → число → ✓», суммы за 7 дней и за всё время.
 - `toggleResumePop(force)` / `onResumeGoalChange(e)` / `bindResumeUI()` — открытие/закрытие (клик по пилюле, Esc, клик мимо), изменение цели (1–99).
 
+Плавающее окно (Document Picture-in-Picture, Chrome/Edge 116+):
+
+- `pipSupported()` — проверка `"documentPictureInPicture" in window`; если нет — кнопка `#resumePip` скрывается.
+- `openResumePipWindow()` — `requestWindow({width, height})`, инжектит `PIP_CSS` и разметку (число `#pipNum`, кнопки `#pipMinus`/`#pipPlus`), вешает обработчики на тот же `addResume()` — окно и страница живут в одном JS-контексте, синхронизация бесплатная. `pagehide` обнуляет `pipWin`.
+- `toggleResumePipWindow()` — тумблер по кнопке `#resumePip` (класс `.is-on` пока окно открыто).
+- `renderResumeCounter()` обновляет и пилюлю на странице, и `#pipNum` в PiP-окне (плюс класс `is-goal` на его `<body>`).
+- Окно закрывается вместе со вкладкой day-runner — вкладка должна оставаться открытой (можно в фоне).
+
 ### 5. Сигналы (звук + уведомления)
 - `ensureAudio()` — ленивая инициализация `AudioContext`.
 - `playTone(freq, offset, dur, gain, type)` — один осциллятор с экспоненциальным гейном.
