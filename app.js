@@ -310,6 +310,7 @@ function addResume(delta) {
   if (next === 0) delete resumes.days[key];
   else resumes.days[key] = next;
   saveResumes();
+  scheduleStatsSync();
   renderResumeCounter();
   const pop = document.getElementById("resumePop");
   if (pop && !pop.hidden) renderResumePop();
@@ -424,6 +425,144 @@ function toggleResumePipWindow() {
   openResumePipWindow();
 }
 
+/* --- автозапись STATS.md в репозиторий (GitHub API + fine-grained token) --- */
+
+const GH_TOKEN_KEY = "day-runner-gh-token";
+const GH_SYNCED_KEY = "day-runner-gh-synced";
+const GH_API_URL = "https://api.github.com/repos/konicaRu/day-runner/contents/STATS.md";
+const GH_SYNC_DELAY_MS = 2 * 60 * 1000;
+
+let ghToken = "";
+try { ghToken = localStorage.getItem(GH_TOKEN_KEY) || ""; } catch {}
+let ghSyncTimer = null;
+let ghSyncing = false;
+
+function statsSnapshot() {
+  return JSON.stringify(resumes.days);
+}
+
+function weekdayShort(key) {
+  try {
+    const [y, m, d] = key.split("-").map(Number);
+    return new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(new Date(y, m - 1, d));
+  } catch { return ""; }
+}
+
+function buildStatsMarkdown() {
+  const keys = Object.keys(resumes.days).sort().reverse();
+  const total = keys.reduce((s, k) => s + resumes.days[k], 0);
+  const lines = [
+    "# Отклики по дням",
+    "",
+    "Автообновляется со страницы [day-runner](https://konicaru.github.io/day-runner/).",
+    "",
+    "| Дата | Резюме |",
+    "|---|---:|",
+  ];
+  for (const k of keys) {
+    lines.push("| " + k + " (" + weekdayShort(k) + ") | " + resumes.days[k] + " |");
+  }
+  lines.push("| **Итого** | **" + total + "** |");
+  lines.push("");
+  return lines.join("\n");
+}
+
+function setGhStatus(text, isError) {
+  const el = document.getElementById("ghSyncStatus");
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle("is-error", !!isError);
+}
+
+function ghHeaders(extra) {
+  return Object.assign({
+    "Authorization": "Bearer " + ghToken,
+    "Accept": "application/vnd.github+json",
+  }, extra || {});
+}
+
+async function syncStatsNow() {
+  if (!ghToken || ghSyncing) return;
+  if (ghSyncTimer) { clearTimeout(ghSyncTimer); ghSyncTimer = null; }
+  ghSyncing = true;
+  setGhStatus("синхронизация…");
+  try {
+    let sha = null;
+    const getRes = await fetch(GH_API_URL, { headers: ghHeaders() });
+    if (getRes.ok) {
+      sha = (await getRes.json()).sha;
+    } else if (getRes.status !== 404) {
+      throw new Error("HTTP " + getRes.status);
+    }
+    const bytes = new TextEncoder().encode(buildStatsMarkdown());
+    const content = btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join(""));
+    const body = { message: "stats: отклики на " + todayKey(), content };
+    if (sha) body.sha = sha;
+    const putRes = await fetch(GH_API_URL, {
+      method: "PUT",
+      headers: ghHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(body),
+    });
+    if (!putRes.ok) throw new Error("HTTP " + putRes.status);
+    try { localStorage.setItem(GH_SYNCED_KEY, statsSnapshot()); } catch {}
+    const d = new Date();
+    setGhStatus("записано в STATS.md · " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()));
+  } catch (e) {
+    const msg = e && e.message ? e.message : String(e);
+    if (msg.indexOf("401") >= 0 || msg.indexOf("403") >= 0) {
+      setGhStatus("ошибка: токен не подошёл (" + msg + ")", true);
+    } else {
+      setGhStatus("ошибка синка: " + msg + " — повторю при следующем «+»", true);
+    }
+  } finally {
+    ghSyncing = false;
+  }
+}
+
+function scheduleStatsSync() {
+  if (!ghToken) return;
+  if (ghSyncTimer) clearTimeout(ghSyncTimer);
+  setGhStatus("запишу в STATS.md через ~2 мин…");
+  ghSyncTimer = setTimeout(syncStatsNow, GH_SYNC_DELAY_MS);
+}
+
+function ghStatusIdle() {
+  if (!ghToken) {
+    setGhStatus("Вставь fine-grained токен GitHub (Contents: write) — таблица будет писаться в STATS.md");
+    return;
+  }
+  let synced = null;
+  try { synced = localStorage.getItem(GH_SYNCED_KEY); } catch {}
+  setGhStatus(synced === statsSnapshot() ? "STATS.md актуален" : "есть несинхронизированные изменения");
+}
+
+function onGhTokenChange(e) {
+  ghToken = e.target.value.trim();
+  try {
+    if (ghToken) localStorage.setItem(GH_TOKEN_KEY, ghToken);
+    else localStorage.removeItem(GH_TOKEN_KEY);
+  } catch {}
+  if (ghToken) syncStatsNow();
+  else ghStatusIdle();
+}
+
+function bindGhSyncUI() {
+  const input = document.getElementById("ghToken");
+  const btn = document.getElementById("ghSyncNow");
+  if (input) {
+    input.value = ghToken;
+    input.addEventListener("change", onGhTokenChange);
+  }
+  if (btn) btn.addEventListener("click", syncStatsNow);
+  ghStatusIdle();
+  // на старте досинхронизируем, если со прошлого раза остались изменения
+  if (ghToken) {
+    let synced = null;
+    try { synced = localStorage.getItem(GH_SYNCED_KEY); } catch {}
+    if (synced !== statsSnapshot()) setTimeout(syncStatsNow, 8000);
+  }
+}
+
 function renderResumePop() {
   const chartEl = document.getElementById("resumeChart");
   const bodyEl = document.getElementById("resumeTableBody");
@@ -534,6 +673,7 @@ function bindResumeUI() {
     if (e.key === "Escape") toggleResumePop(false);
   });
   renderResumeCounter();
+  bindGhSyncUI();
 }
 
 /* ----------------- Сигналы (звук + уведомления) ----------------- */

@@ -364,6 +364,59 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.resume-sync {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.resume-sync-row {
+  display: flex;
+  gap: 6px;
+}
+
+.resume-sync-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.resume-sync-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.resume-sync-btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+
+.resume-sync-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.resume-sync-status {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-subtle);
+}
+
+.resume-sync-status.is-error { color: #B91C1C; }
+
 .clock {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;

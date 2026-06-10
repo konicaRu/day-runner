@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body>
   <header class="topbar">
@@ -44,6 +44,13 @@
           <div class="resume-pop-foot">
             <span id="resumeWeek">за 7 дней: 0</span>
             <span id="resumeTotal">всего: 0</span>
+          </div>
+          <div class="resume-sync">
+            <div class="resume-sync-row">
+              <input id="ghToken" type="password" placeholder="GitHub token (fine-grained)" autocomplete="off" />
+              <button id="ghSyncNow" class="resume-sync-btn" type="button">Синк</button>
+            </div>
+            <div class="resume-sync-status" id="ghSyncStatus"></div>
           </div>
         </div>
       </div>
@@ -89,7 +96,7 @@
     </section>
     <section id="schedule" class="schedule" aria-label="Расписание"></section>
   </main>
-  <script src="schedule.js?v=10"></script>
-  <script src="app.js?v=10"></script>
+  <script src="schedule.js?v=11"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
