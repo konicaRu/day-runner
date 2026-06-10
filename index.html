@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="stylesheet" href="styles.css?v=9" />
 </head>
 <body>
   <header class="topbar">
@@ -27,6 +27,25 @@
       <span class="now-label">Сейчас</span>
       <span class="now-title" id="nowBlock">—</span>
       <span class="now-meta" id="nowMeta"></span>
+      <div class="resume-widget" id="resumeWidget">
+        <button id="resumeMinus" class="resume-step" type="button" aria-label="Убрать одно резюме">−</button>
+        <button id="resumeCount" class="resume-pill" type="button" title="История откликов">Резюме <b id="resumeCountNum">0/10</b></button>
+        <button id="resumePlus" class="resume-step resume-plus" type="button" aria-label="Добавить резюме">+</button>
+        <div class="resume-pop" id="resumePop" hidden>
+          <div class="resume-pop-head">
+            <span class="resume-pop-title">Отклики по дням</span>
+            <label class="resume-goal">Цель в день <input id="resumeGoal" type="number" min="1" max="99" /></label>
+          </div>
+          <div class="resume-chart" id="resumeChart" aria-hidden="true"></div>
+          <div class="resume-table-wrap">
+            <table class="resume-table"><tbody id="resumeTableBody"></tbody></table>
+          </div>
+          <div class="resume-pop-foot">
+            <span id="resumeWeek">за 7 дней: 0</span>
+            <span id="resumeTotal">всего: 0</span>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
   <main>
@@ -69,7 +88,7 @@
     </section>
     <section id="schedule" class="schedule" aria-label="Расписание"></section>
   </main>
-  <script src="schedule.js?v=8"></script>
-  <script src="app.js?v=8"></script>
+  <script src="schedule.js?v=9"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

@@ -259,6 +259,187 @@ function maybeRollOverDay() {
   }
 }
 
+/* ----------------- Счётчик резюме ----------------- */
+
+const RESUMES_KEY = "day-runner-resumes";
+const RESUME_GOAL_DEFAULT = 10;
+const RESUME_CHART_DAYS = 14;
+
+function loadResumes() {
+  try {
+    const raw = localStorage.getItem(RESUMES_KEY);
+    if (!raw) return { goal: RESUME_GOAL_DEFAULT, days: {} };
+    const parsed = JSON.parse(raw);
+    return {
+      goal: Number(parsed.goal) > 0 ? Math.floor(Number(parsed.goal)) : RESUME_GOAL_DEFAULT,
+      days: parsed.days && typeof parsed.days === "object" ? parsed.days : {},
+    };
+  } catch {
+    return { goal: RESUME_GOAL_DEFAULT, days: {} };
+  }
+}
+
+let resumes = loadResumes();
+
+function saveResumes() {
+  try { localStorage.setItem(RESUMES_KEY, JSON.stringify(resumes)); } catch {}
+}
+
+function resumesToday() {
+  return resumes.days[todayKey()] || 0;
+}
+
+function dateKeyOffset(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+
+function formatDayShort(key) {
+  try {
+    const [y, m, day] = key.split("-").map(Number);
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "numeric", month: "short", weekday: "short",
+    }).format(new Date(y, m - 1, day));
+  } catch { return key; }
+}
+
+function addResume(delta) {
+  const key = todayKey();
+  const next = Math.max(0, (resumes.days[key] || 0) + delta);
+  if (next === 0) delete resumes.days[key];
+  else resumes.days[key] = next;
+  saveResumes();
+  renderResumeCounter();
+  const pop = document.getElementById("resumePop");
+  if (pop && !pop.hidden) renderResumePop();
+  if (delta > 0) {
+    const pill = document.getElementById("resumeCount");
+    if (pill) {
+      pill.classList.remove("is-bump");
+      void pill.offsetWidth;
+      pill.classList.add("is-bump");
+    }
+  }
+}
+
+function renderResumeCounter() {
+  const numEl = document.getElementById("resumeCountNum");
+  const pill = document.getElementById("resumeCount");
+  if (!numEl || !pill) return;
+  const n = resumesToday();
+  const text = n + "/" + resumes.goal;
+  if (numEl.textContent !== text) numEl.textContent = text;
+  pill.classList.toggle("is-goal", n >= resumes.goal);
+}
+
+function renderResumePop() {
+  const chartEl = document.getElementById("resumeChart");
+  const bodyEl = document.getElementById("resumeTableBody");
+  const weekEl = document.getElementById("resumeWeek");
+  const totalEl = document.getElementById("resumeTotal");
+  if (!chartEl || !bodyEl) return;
+
+  const days = resumes.days;
+  const keys = Object.keys(days).sort().reverse();
+  const total = keys.reduce((s, k) => s + days[k], 0);
+  let week = 0;
+  for (let i = 0; i > -7; i--) week += days[dateKeyOffset(i)] || 0;
+
+  // мини-график: последние RESUME_CHART_DAYS дней слева направо
+  chartEl.innerHTML = "";
+  let maxVal = 1;
+  const chart = [];
+  for (let i = -(RESUME_CHART_DAYS - 1); i <= 0; i++) {
+    const k = dateKeyOffset(i);
+    const v = days[k] || 0;
+    if (v > maxVal) maxVal = v;
+    chart.push({ k, v });
+  }
+  for (const { k, v } of chart) {
+    const bar = document.createElement("div");
+    bar.className = "resume-bar";
+    if (v >= resumes.goal) bar.classList.add("is-goal");
+    if (k === todayKey()) bar.classList.add("is-today");
+    bar.style.height = v > 0 ? Math.max(8, (v / maxVal) * 100) + "%" : "3px";
+    bar.title = formatDayShort(k) + " — " + v;
+    chartEl.append(bar);
+  }
+
+  // таблица: дата → количество, свежие сверху
+  bodyEl.innerHTML = "";
+  if (keys.length === 0) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 3;
+    td.className = "resume-empty";
+    td.textContent = "Пока пусто — жми «+» после каждого отправленного резюме";
+    tr.append(td);
+    bodyEl.append(tr);
+  } else {
+    for (const k of keys) {
+      const tr = document.createElement("tr");
+      if (k === todayKey()) tr.className = "is-today";
+      const tdDate = document.createElement("td");
+      tdDate.textContent = formatDayShort(k);
+      const tdNum = document.createElement("td");
+      tdNum.className = "resume-num";
+      tdNum.textContent = days[k];
+      const tdMark = document.createElement("td");
+      tdMark.className = "resume-mark";
+      tdMark.textContent = days[k] >= resumes.goal ? "✓" : "";
+      tr.append(tdDate, tdNum, tdMark);
+      bodyEl.append(tr);
+    }
+  }
+
+  if (weekEl) weekEl.textContent = "за 7 дней: " + week;
+  if (totalEl) totalEl.textContent = "всего: " + total;
+}
+
+function toggleResumePop(force) {
+  const pop = document.getElementById("resumePop");
+  if (!pop) return;
+  const show = force !== undefined ? force : pop.hidden;
+  if (show) {
+    renderResumePop();
+    const goalInput = document.getElementById("resumeGoal");
+    if (goalInput) goalInput.value = resumes.goal;
+    pop.hidden = false;
+  } else {
+    pop.hidden = true;
+  }
+}
+
+function onResumeGoalChange(e) {
+  const v = Math.max(1, Math.min(99, Math.floor(Number(e.target.value)) || RESUME_GOAL_DEFAULT));
+  resumes.goal = v;
+  e.target.value = v;
+  saveResumes();
+  renderResumeCounter();
+  renderResumePop();
+}
+
+function bindResumeUI() {
+  const plus = document.getElementById("resumePlus");
+  const minus = document.getElementById("resumeMinus");
+  const pill = document.getElementById("resumeCount");
+  const goal = document.getElementById("resumeGoal");
+  if (plus) plus.addEventListener("click", () => addResume(1));
+  if (minus) minus.addEventListener("click", () => addResume(-1));
+  if (pill) pill.addEventListener("click", () => toggleResumePop());
+  if (goal) goal.addEventListener("change", onResumeGoalChange);
+  document.addEventListener("click", (e) => {
+    const widget = document.getElementById("resumeWidget");
+    const pop = document.getElementById("resumePop");
+    if (pop && !pop.hidden && widget && !widget.contains(e.target)) pop.hidden = true;
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") toggleResumePop(false);
+  });
+  renderResumeCounter();
+}
+
 /* ----------------- Сигналы (звук + уведомления) ----------------- */
 
 let soundOn = true;
@@ -642,11 +823,13 @@ function tick() {
   renderTimer();
   updateBlockStates();
   maybeRollOverDay();
+  renderResumeCounter();
 }
 
 renderSchedule();
 bindTimerUI();
 bindSignalsUI();
+bindResumeUI();
 renderTimer();
 tick();
 setInterval(tick, 1000);

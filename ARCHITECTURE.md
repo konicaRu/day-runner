@@ -37,7 +37,7 @@ day-runner/
 - `<head>` подключает Google Fonts (preconnect + Manrope/JetBrains Mono) и `styles.css?v=N`.
 - `<header class="topbar">` — две строки:
   - `topbar-main`: `<h1>Пульт дня</h1>` + `#date` слева, `#countdown` + `#clock` справа.
-  - `topbar-now`: `#nowBlock` (пилюля с названием текущего блока) + `#nowMeta` (до смены).
+  - `topbar-now`: `#nowBlock` (пилюля с названием текущего блока) + `#nowMeta` (до смены) + справа (`margin-left: auto`) виджет счётчика резюме `#resumeWidget`: кнопки `−`/`+`, пилюля `#resumeCount` («Резюме N/цель», клик открывает поповер `#resumePop` с целью, мини-графиком, таблицей по дням и итогами).
 - `<main>`:
   - `<section class="pomodoro" id="pomodoro">` — карточка-герой с SVG-кольцом, центром-таймером и двумя рядами кнопок (управление и звук).
   - `<section id="schedule" class="schedule">` — пустой контейнер, наполняется из `app.js`.
@@ -110,6 +110,19 @@ day-runner/
 - `renderClock()` — обновляет `#clock`.
 - `renderCountdown()` — обратный отсчёт до `DAY_END_MIN`, ставит `.is-over` если время вышло.
 - `renderHeader()` — дата (через `Intl.DateTimeFormat('ru-RU', ...)`) + «сейчас по плану» с цветной пилюлей по `data-type` и человеческим отсчётом до смены блока.
+
+### 4.5 Счётчик резюме
+
+Хранится в `localStorage` отдельным ключом `day-runner-resumes` = `{ goal, days: { "YYYY-MM-DD": n } }`. **Не сбрасывается в новый день** — наоборот, копится история по датам.
+
+- `loadResumes()` / `saveResumes()` — чтение/запись с валидацией.
+- `resumesToday()` — счётчик за сегодня (`days[todayKey()] || 0`).
+- `dateKeyOffset(offset)` — ключ даты со сдвигом в днях (для сумм за 7 дней и графика).
+- `formatDayShort(key)` — `"ср, 10 июн."` через `Intl`.
+- `addResume(delta)` — инкремент/декремент за сегодня (не ниже 0), bump-анимация пилюли при «+».
+- `renderResumeCounter()` — текст пилюли `N/goal` + класс `.is-goal` (зелёная при достижении цели). Дёргается в `tick()` (дёшево, заодно обрабатывает смену дня).
+- `renderResumePop()` — мини-график за 14 дней (столбики, сегодня — акцент, дни с целью — зелёные), таблица «дата → число → ✓», суммы за 7 дней и за всё время.
+- `toggleResumePop(force)` / `onResumeGoalChange(e)` / `bindResumeUI()` — открытие/закрытие (клик по пилюле, Esc, клик мимо), изменение цели (1–99).
 
 ### 5. Сигналы (звук + уведомления)
 - `ensureAudio()` — ленивая инициализация `AudioContext`.
